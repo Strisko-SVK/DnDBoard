@@ -6,8 +6,8 @@ services:
     buildCommand: npm install && npm -w backend run render-build
     startCommand: cd backend && npm run prisma:migrate:deploy && npm run start:prod
     envVars:
-      - key: DATABASE_URL      # e.g. postgres://user:pass@host:5432/dbname
-        sync: false
+      - key: DATABASE_URL
+        value: file:./prisma/dev.db
       - key: JWT_SECRET
         sync: false
       - key: ADMIN_EMAIL
@@ -33,4 +33,3 @@ services:
 #      - key: NEXT_PUBLIC_BACKEND_URL
 #        value: https://dndboard-backend.onrender.com
 #    autoDeploy: true
-

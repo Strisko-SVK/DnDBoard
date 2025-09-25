@@ -226,3 +226,36 @@ The unified smoke script auto-detects `BASE_URL` port 4100 and launches the Pris
 ## License
 
 MIT (MVP scaffold). Replace / update as needed.
+
+## Deployment (SQLite + Render Notes)
+
+The Prisma schema expects `DATABASE_URL` to be set. For local dev we place a `.env` file alongside the Prisma schema at `backend/prisma/.env`:
+```
+DATABASE_URL="file:./dev.db"
+```
+Prisma automatically loads that file when running inside the `backend` workspace.
+
+On Render (current `render.yaml`), we explicitly set:
+```
+DATABASE_URL = file:./prisma/dev.db
+```
+Because the start command changes into the `backend` directory (`cd backend && ...`), this relative path resolves to `backend/prisma/dev.db`.
+
+If you encountered the deployment error:
+```
+Error: Environment variable not found: DATABASE_URL. (P1012)
+```
+make sure either:
+1. The `DATABASE_URL` env var is defined in the Render dashboard or `render.yaml`, OR
+2. You have committed a `render.yaml` containing a value for `DATABASE_URL` (as now done), OR
+3. (Local only) you created `backend/prisma/.env` with the variable.
+
+### Persistence Caveats (SQLite on Render)
+SQLite on ephemeral containers will not persist across deploys unless you attach a persistent disk. For production, migrate to Postgres (adjust `provider = "postgresql"` and set a Postgres connection string). Until then, data loss on restart is expected.
+
+### Recommended Next Step for Production
+- Provision a managed Postgres instance
+- Set `DATABASE_URL` to the Postgres URI
+- Run `npm -w backend run prisma:migrate:deploy`
+- Remove committed `dev.db` from version control and add `backend/prisma/dev.db` to `.gitignore`
+
