@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "build": "npm -w shared run build && npm -w backend run build && npm -w frontend run build",
+    "build:render:backend": "npm run build -w shared && npm run build -w backend",
+    "build:render:frontend": "npm run build -w shared && npm run build -w frontend",
     "dev": "npm -w shared run build && concurrently -n SHARED,BACKEND,FRONTEND -c blue,green,magenta \"npm -w shared run dev\" \"npm -w backend run dev\" \"npm -w frontend run dev\"",
     "smoke": "node scripts/smoke.mjs",
     "smoke:prisma": "BASE_URL=http://localhost:4100 node scripts/smoke.mjs",
