@@ -4,7 +4,7 @@ services:
     env: node
     plan: free
     buildCommand: npm install && npm -w backend run render-build
-    startCommand: cd backend && npm run prisma:migrate:deploy && npm run start:prod
+    startCommand: cd backend && npm run prisma:migrate:deploy:safe && npm run start:prod
     envVars:
       - key: DATABASE_URL
         value: file:./prisma/dev.db

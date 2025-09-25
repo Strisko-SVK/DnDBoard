@@ -7,6 +7,12 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuid } from 'uuid';
 
+// Ensure DATABASE_URL fallback (deployment safety) before PrismaClient init
+if(!process.env.DATABASE_URL){
+  process.env.DATABASE_URL = 'file:./prisma/dev.db';
+  // eslint-disable-next-line no-console
+  console.warn('[startup] DATABASE_URL missing – using fallback file:./prisma/dev.db');
+}
 const prisma = new PrismaClient();
 
 // Config

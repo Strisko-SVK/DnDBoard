@@ -13,7 +13,8 @@
     "render-build": "npm run prisma:generate && npm run build",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
-    "prisma:migrate:deploy": "prisma migrate deploy"
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate:deploy:safe": "node scripts/migrate-deploy-safe.cjs"
   },
   "dependencies": {
     "@dndboard/shared": "0.1.0",
