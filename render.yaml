@@ -3,7 +3,7 @@ services:
     name: dndboard-backend
     env: node
     plan: free
-    buildCommand: npm install --include=dev && npm -w backend run render-build
+    buildCommand: npm install --include=dev && npm run build -w shared && npm -w backend run render-build
     startCommand: cd backend && npm run prisma:migrate:deploy:safe && npm run start:prod
     envVars:
       - key: DATABASE_URL
