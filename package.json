@@ -1,0 +1,25 @@
+{
+  "name": "dndboard-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "build": "npm -w shared run build && npm -w backend run build && npm -w frontend run build",
+    "dev": "npm -w shared run build && concurrently -n SHARED,BACKEND,FRONTEND -c blue,green,magenta \"npm -w shared run dev\" \"npm -w backend run dev\" \"npm -w frontend run dev\"",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:prisma": "BASE_URL=http://localhost:4100 node scripts/smoke.mjs",
+    "smoke:prisma:persist": "node scripts/persist-prisma.mjs",
+    "lint": "eslint \"{backend,shared,frontend}/**/*.{ts,tsx,js,jsx}\" --max-warnings=0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.3"
+  }
+}

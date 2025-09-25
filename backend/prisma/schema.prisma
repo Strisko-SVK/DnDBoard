@@ -1,0 +1,109 @@
+// Prisma schema for DnD Board MVP persistent storage (SQLite)
+// Enums replaced with string fields due to SQLite connector limitations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(cuid())
+  email        String      @unique
+  passwordHash String
+  displayName  String
+  avatarUrl    String?
+  createdAt    DateTime    @default(now())
+  roles        UserRole[]
+  memberships  Membership[]
+  quests       Quest[]     @relation("QuestCreator")
+  dmBoards     Board[]     @relation("BoardDm")
+  comments     Comment[]
+}
+
+model UserRole {
+  id     Int    @id @default(autoincrement())
+  role   String
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+  @@unique([userId, role])
+}
+
+model Board {
+  id          String        @id @default(cuid())
+  dm          User          @relation("BoardDm", fields: [dmId], references: [id])
+  dmId        String
+  title       String
+  description String?
+  background  String?
+  visibility  String        @default("invite")
+  isLocked    Boolean       @default(false)
+  questOrder  String?       // JSON encoded string array
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  memberships Membership[]
+  quests      Quest[]
+  assignments QuestAssignment[]
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  board     Board    @relation(fields: [boardId], references: [id])
+  boardId   String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  role      String
+  invitedAt DateTime @default(now())
+  joinedAt  DateTime?
+  @@unique([boardId, userId])
+}
+
+model Quest {
+  id                   String       @id @default(cuid())
+  board                Board        @relation(fields: [boardId], references: [id])
+  boardId              String
+  title                String
+  summary              String
+  bodyMarkdown         String       @default("")
+  images               String       @default("") // comma-separated URLs
+  tags                 String       @default("") // comma-separated tags
+  difficulty           String       @default("Medium")
+  rewardsJson          String       @default("")
+  status               String       @default("Posted")
+  visibility           String       @default("publicOnBoard")
+  allowMultipleAccepts Boolean      @default(false)
+  createdBy            User         @relation("QuestCreator", fields: [createdById], references: [id])
+  createdById          String
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  assignments          QuestAssignment[]
+  comments             Comment[]
+}
+
+model QuestAssignment {
+  id             String   @id @default(cuid())
+  quest          Quest    @relation(fields: [questId], references: [id])
+  questId        String
+  board          Board    @relation(fields: [boardId], references: [id])
+  boardId        String
+  assignedToType String   @default("Player")
+  assignedToId   String
+  status         String   @default("Accepted")
+  acceptedAt     DateTime @default(now())
+  completedAt    DateTime?
+  notes          String?
+}
+
+model Comment {
+  id           String   @id @default(cuid())
+  quest        Quest    @relation(fields: [questId], references: [id])
+  questId      String
+  author       User     @relation(fields: [authorId], references: [id])
+  authorId     String
+  bodyMarkdown String
+  createdAt    DateTime @default(now())
+  parentId     String?
+}
