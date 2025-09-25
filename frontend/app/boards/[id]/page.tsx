@@ -93,8 +93,7 @@ export default function BoardDetailPage() {
   },[selected,questComments]);
 
   // Redirect moved into effect to avoid SSR router usage
-  const [redirecting,setRedirecting]=useState(false);
-  useEffect(()=>{ if(!token){ setRedirecting(true); router.replace('/login'); } }, [token, router]);
+  useEffect(()=>{ if(!token){ router.replace('/login'); } }, [token, router]);
   if(!token) return <div className="p-4 text-sm">Redirecting...</div>;
 
   if (boardError) return <div className="p-6">Board not found</div>;

@@ -10,4 +10,3 @@ if(mode === 'prisma') {
   console.log('[start] Launching legacy in-memory server (index.ts)');
   require('./index');
 }
-

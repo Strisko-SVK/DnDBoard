@@ -1,39 +1,26 @@
-/* Root ESLint config for monorepo (backend, shared, frontend)
- * Goal: eliminate existing errors/warnings blocking push while keeping a baseline of sensible rules.
- */
+/* Root ESLint configuration for monorepo */
 module.exports = {
   root: true,
+  ignorePatterns: ['dist', 'node_modules'],
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint'],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended'
   ],
-  ignorePatterns: [
-    '**/dist/**',
-    '**/*.d.ts',
-    'node_modules/',
-    'frontend/.next/**'
-  ],
   overrides: [
     {
-      files: ['frontend/**/*.{ts,tsx}'],
-      extends: ['next/core-web-vitals'],
-      rules: {}
-    },
-    {
-      files: ['backend/**/*.{ts,tsx}', 'shared/**/*.{ts,tsx}'],
-      env: { node: true },
-      rules: {}
+      files: ['frontend/**/*.{ts,tsx,js,jsx}'],
+      extends: ['next', 'next/core-web-vitals'],
+      rules: {
+        // Using the app/ directory, so disable rule expecting pages/ structure
+        '@next/next/no-html-link-for-pages': 'off'
+      }
     }
   ],
   rules: {
-    // Reduce friction (warnings previously blocking build) – can be re-enabled gradually.
-    'no-unused-vars': 'off',
-    '@typescript-eslint/no-unused-vars': 'off',
-    '@typescript-eslint/no-explicit-any': 'off',
-    '@typescript-eslint/explicit-module-boundary-types': 'off',
-    'react-hooks/exhaustive-deps': 'off'
+    // Allow explicit any temporarily in backend until types are refined
+    '@typescript-eslint/no-explicit-any': 'off'
   }
 };
 

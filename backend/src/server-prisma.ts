@@ -47,11 +47,10 @@ io.on('connection', socket => {
     socket.leave(`board:${boardId}`);
     if(userId && presence[boardId]){ presence[boardId].delete(userId); emit(boardId); }
   });
-  socket.on('disconnect',()=>{ if(userId){ joined.forEach(b=>{ if(presence[b]){ presence[b].delete(userId); emit(b);} }); } });
+  socket.on('disconnect',()=>{ if(userId){ joined.forEach((b:string)=>{ if(presence[b]){ presence[b].delete(userId); emit(b);} }); } });
 });
 
 // Helpers
-function nowISO(){ return new Date().toISOString(); }
 function tokenFor(id:string){ return jwt.sign({ sub:id }, JWT_SECRET, { expiresIn:'7d' }); }
 async function userWithRoles(id:string){ return prisma.user.findUnique({ where:{ id }, include:{ roles:true } }); }
 function toUser(u:any){ return { id:u.id, email:u.email, displayName:u.displayName, avatarUrl:u.avatarUrl, roles:u.roles.map((r:any)=>r.role), createdAt:u.createdAt }; }
@@ -121,8 +120,8 @@ app.get('/boards', auth, async (req:AuthedReq,res)=>{
   const uid = req.userId!;
   const memberBoards = await prisma.board.findMany({ where:{ memberships:{ some:{ userId: uid } } }, include:{ quests:true } });
   const linkBoards = await prisma.board.findMany({ where:{ visibility:'link' }, include:{ quests:true } });
-  const map:Record<string,any>={}; memberBoards.concat(linkBoards).forEach(b=>map[b.id]=b);
-  res.json(Object.values(map).map(b=>({ id:b.id, dmId:b.dmId, title:b.title, description:b.description, visibility:b.visibility, isLocked:b.isLocked, createdAt:b.createdAt, updatedAt:b.updatedAt, questOrder: b.questOrder? JSON.parse(b.questOrder): undefined })));
+  const map:Record<string,any>={}; memberBoards.concat(linkBoards).forEach((b:any)=>map[b.id]=b);
+  res.json(Object.values(map).map((b:any)=>({ id:b.id, dmId:b.dmId, title:b.title, description:b.description, visibility:b.visibility, isLocked:b.isLocked, createdAt:b.createdAt, updatedAt:b.updatedAt, questOrder: b.questOrder? JSON.parse(b.questOrder): undefined })));
 });
 
 app.post('/boards', auth, async (req:AuthedReq,res)=>{
@@ -138,9 +137,9 @@ app.get('/boards/:id', auth, async (req:AuthedReq,res)=>{
   if(!board) return res.status(404).json({ error:'Not found'});
   const member = await prisma.membership.findUnique({ where:{ boardId_userId:{ boardId:id, userId: req.userId! } } });
   if(!member && board.visibility!=='link') return res.status(403).json({ error:'Forbidden'});
-  const questCount = board.quests.filter(q=>q.status!=='Archived').length;
+  const questCount = board.quests.filter((q:any)=>q.status!=='Archived').length;
   let order = board.questOrder? JSON.parse(board.questOrder): undefined;
-  if(!order) order = board.quests.sort((a,b)=> a.createdAt.getTime()-b.createdAt.getTime()).map(q=>q.id);
+  if(!order) order = board.quests.sort((a:any,b:any)=> a.createdAt.getTime()-b.createdAt.getTime()).map((q:any)=>q.id);
   res.json({ id: board.id, dmId: board.dmId, title: board.title, description: board.description, visibility: board.visibility, isLocked: board.isLocked, createdAt: board.createdAt, updatedAt: board.updatedAt, membership: board.memberships, questCount, questOrder: order });
 });
 
@@ -165,21 +164,21 @@ app.get('/boards/:id/quests', auth, async (req:AuthedReq,res)=>{
   if(!member && board.visibility!=='link') return res.status(403).json({ error:'Forbidden'});
   const { status, tags, q, includeDeclined } = req.query as any;
   let quests = await prisma.quest.findMany({ where:{ boardId:id, NOT:{ status:'Archived' } } });
-  if(status && typeof status==='string') quests = quests.filter(q=> q.status === status);
+  if(status && typeof status==='string') quests = quests.filter((q:any)=> q.status === status);
   if(tags && typeof tags==='string') {
     const wanted = new Set(tags.split(',').map((t:string)=>t.trim()).filter(Boolean));
-    quests = quests.filter(q=> q.tags.split(',').some(t=>wanted.has(t)));
+    quests = quests.filter((q:any)=> q.tags.split(',').some((t:string)=>wanted.has(t)));
   }
   if(q && typeof q==='string') {
     const term = q.toLowerCase();
-    quests = quests.filter(r=> r.title.toLowerCase().includes(term) || r.summary.toLowerCase().includes(term));
+    quests = quests.filter((r:any)=> r.title.toLowerCase().includes(term) || r.summary.toLowerCase().includes(term));
   }
   if(!includeDeclined && declines[req.userId!]) {
     const dset = declines[req.userId!];
-    quests = quests.filter(r=> !dset.has(r.id));
+    quests = quests.filter((r:any)=> !dset.has(r.id));
   }
-  if(board.questOrder){ const idx = new Map((JSON.parse(board.questOrder) as string[]).map((qid,i)=>[qid,i])); quests.sort((a,b)=> (idx.get(a.id)??9999)-(idx.get(b.id)??9999)); }
-  res.json(quests.map(q=>serializeQuest(q)));
+  if(board.questOrder){ const idx = new Map((JSON.parse(board.questOrder) as string[]).map((qid:string,i:number)=>[qid,i])); quests.sort((a:any,b:any)=> (idx.get(a.id)??9999)-(idx.get(b.id)??9999)); }
+  res.json(quests.map((q:any)=>serializeQuest(q)));
 });
 
 // Decline quest (transient)
@@ -280,7 +279,7 @@ app.post('/boards/:id/reorder', auth, async (req:AuthedReq,res)=>{
   if(!Array.isArray(questIds)) return res.status(400).json({ error:'questIds array required'});
   const board = await prisma.board.findUnique({ where:{ id }, include:{ quests:true } }); if(!board) return res.status(404).json({ error:'Not found'});
   if(!assertDM(board, req.userId!)) return res.status(403).json({ error:'Forbidden'});
-  const valid = new Set(board.quests.filter(q=>q.status!=='Archived').map(q=>q.id));
+  const valid = new Set(board.quests.filter((q:any)=>q.status!=='Archived').map((q:any)=>q.id));
   if(!questIds.every((q:string)=>valid.has(q))) return res.status(400).json({ error:'Invalid quest id in list'});
   await prisma.board.update({ where:{ id }, data:{ questOrder: JSON.stringify(questIds) } });
   io.to(`board:${id}`).emit('board:update', { boardId:id, type:'reorder', questOrder:questIds });
@@ -382,20 +381,20 @@ app.post('/quests/:id/comments', auth, async (req:AuthedReq,res)=>{
 // Admin endpoints
 app.get('/admin/users', auth, async (req:AuthedReq,res)=>{
   const u = await userWithRoles(req.userId!); if(!u) return res.status(401).json({ error:'User not found'});
-  if(!u.roles.some(r=>r.role==='Admin')) return res.status(403).json({ error:'Admin only'});
+  if(!u.roles.some((r:any)=>r.role==='Admin')) return res.status(403).json({ error:'Admin only'});
   const users = await prisma.user.findMany({ include:{ roles:true } });
   res.json(users.map(toUser));
 });
 app.post('/admin/promote', auth, async (req:AuthedReq,res)=>{
   const u = await userWithRoles(req.userId!); if(!u) return res.status(401).json({ error:'User not found'});
-  if(!u.roles.some(r=>r.role==='Admin')) return res.status(403).json({ error:'Admin only'});
+  if(!u.roles.some((r:any)=>r.role==='Admin')) return res.status(403).json({ error:'Admin only'});
   const { userId, role='Admin' } = req.body || {};
   if(!userId) return res.status(400).json({ error:'userId required'});
   const target = await prisma.user.findUnique({ where:{ id: userId }, include:{ roles:true } });
   if(!target) return res.status(404).json({ error:'User not found'});
-  if(!target.roles.some(r=>r.role===role)) await prisma.userRole.create({ data:{ userId: target.id, role } });
+  if(!target.roles.some((r:any)=>r.role===role)) await prisma.userRole.create({ data:{ userId: target.id, role } });
   const updated = await prisma.user.findUnique({ where:{ id: userId }, include:{ roles:true } });
-  res.json({ id: updated!.id, roles: updated!.roles.map(r=>r.role) });
+  res.json({ id: updated!.id, roles: updated!.roles.map((r:any)=>r.role) });
 });
 
 (async ()=>{

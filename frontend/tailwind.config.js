@@ -9,7 +9,13 @@ module.exports = {
     './components/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        // Neutral ink & parchment palette
+        parchment: '#F5F0E6', // soft off-white parchment background
+        ink: '#1C1B1A',       // near-black ink color
+      },
+    },
   },
   plugins: [],
 };
