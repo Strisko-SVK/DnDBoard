@@ -9,8 +9,11 @@
     "dev:start": "ts-node-dev --respawn --transpile-only src/start.ts",
     "dev:prisma": "PERSISTENCE=prisma ts-node-dev --respawn --transpile-only src/start.ts",
     "start": "node dist/start.js",
+    "start:prod": "PERSISTENCE=prisma node dist/start.js",
+    "render-build": "npm run prisma:generate && npm run build",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev --name init"
+    "prisma:migrate": "prisma migrate dev --name init",
+    "prisma:migrate:deploy": "prisma migrate deploy"
   },
   "dependencies": {
     "@dndboard/shared": "0.1.0",
