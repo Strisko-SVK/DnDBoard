@@ -21,15 +21,15 @@ services:
     healthCheckPath: /health
     autoDeploy: true
 
-# Optional: add a second service for the Next.js frontend (SSG or SSR).
-# Uncomment and adjust if you decide to deploy frontend on Render instead of (or in addition to) Vercel.
-#  - type: web
-#    name: dndboard-frontend
-#    env: node
-#    plan: free
-#    buildCommand: npm install && npm -w frontend run build
-#    startCommand: cd frontend && npm start
-#    envVars:
-#      - key: NEXT_PUBLIC_BACKEND_URL
-#        value: https://dndboard-backend.onrender.com
-#    autoDeploy: true
+  # Add a second service for the Next.js frontend.
+  # This will be deployed as a separate web service on Render.
+  - type: web
+    name: dndboard
+    env: node
+    plan: free
+    buildCommand: npm install --include=dev && npm run build -w frontend
+    startCommand: npm start -w frontend
+    envVars:
+      - key: NEXT_PUBLIC_BACKEND_URL
+        value: https://dndboard-backend.onrender.com
+    autoDeploy: true
