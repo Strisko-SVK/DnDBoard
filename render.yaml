@@ -27,7 +27,7 @@ services:
     name: dndboard
     env: node
     plan: free
-    buildCommand: npm install --include=dev && npm run build -w frontend
+    buildCommand: npm install --include=dev && npm run build -w shared && npm run build -w frontend
     startCommand: npm start -w frontend
     envVars:
       - key: NEXT_PUBLIC_BACKEND_URL
