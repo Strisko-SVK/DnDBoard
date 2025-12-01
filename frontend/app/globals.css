@@ -2,12 +2,222 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body { height: 100%; }
-body { @apply bg-parchment text-ink antialiased; }
+/* Fantasy Tavern Theme - Base Styles */
+html, body {
+  height: 100%;
+}
 
-.btn { @apply inline-flex items-center gap-2 rounded-md bg-ink text-parchment px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition; }
-.btn-outline { @apply inline-flex items-center gap-2 rounded-md border border-ink text-ink px-4 py-2 text-sm font-medium hover:bg-ink hover:text-parchment transition; }
-.card { @apply rounded-lg border border-ink/20 bg-white/70 shadow-sm p-4 backdrop-blur; }
-.input { @apply w-full rounded-md border border-ink/30 bg-white/80 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ink/40; }
-.badge { @apply inline-block rounded bg-ink/10 px-2 py-0.5 text-xs font-medium mr-1 mb-1; }
+body {
+  @apply bg-oak text-ink antialiased;
+  background-image: linear-gradient(to bottom, theme('colors.oak.dark'), theme('colors.oak.DEFAULT'));
+}
+
+/* Component Styles */
+@layer components {
+  /* Button Styles - Themed for Fantasy Tavern */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium;
+    @apply transition-all duration-200;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .btn-accept {
+    @apply btn bg-gold hover:bg-gold-light text-oak shadow-md hover:shadow-lg;
+    @apply focus:ring-gold-light;
+    /* Burnished gold for Accept/Rewards */
+  }
+
+  .btn-decline {
+    @apply btn bg-crimson hover:bg-crimson-light text-parchment shadow-md hover:shadow-lg;
+    @apply focus:ring-crimson-light;
+    /* Deep crimson for Decline/Important */
+  }
+
+  .btn-primary {
+    @apply btn bg-brass hover:bg-brass-light text-oak shadow-md hover:shadow-lg;
+    @apply focus:ring-brass-light;
+  }
+
+  .btn-outline {
+    @apply btn border-2 border-parchment-aged bg-transparent text-parchment-light;
+    @apply hover:bg-parchment-aged hover:text-ink;
+  }
+
+  .btn-success {
+    @apply btn bg-forest hover:bg-forest-light text-parchment shadow-md;
+    @apply focus:ring-forest-light;
+  }
+
+  /* Card Styles - Parchment Paper Look */
+  .card {
+    @apply rounded-lg p-4;
+    @apply bg-parchment shadow-card;
+    @apply border border-ink/10;
+    background-image: theme('backgroundImage.parchment-texture');
+    position: relative;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%, rgba(0,0,0,0.05) 100%);
+    pointer-events: none;
+  }
+
+  .card-hover {
+    @apply card transition-all duration-200 cursor-pointer;
+    @apply hover:shadow-card-hover hover:scale-[1.02];
+  }
+
+  /* Quest Card - Pinned Note Style */
+  .quest-card {
+    @apply card-hover;
+    @apply bg-parchment-aged;
+    /* Add torn edge effect with clip-path */
+    clip-path: polygon(
+      0% 2%, 2% 0%, 98% 0%, 100% 2%,
+      100% 98%, 98% 100%, 2% 100%, 0% 98%
+    );
+  }
+
+  /* Input Styles */
+  .input {
+    @apply w-full rounded-md px-3 py-2 text-sm;
+    @apply bg-parchment-light border-2 border-ink/20;
+    @apply text-ink placeholder:text-ink/40;
+    @apply focus:outline-none focus:ring-2 focus:ring-brass focus:border-brass;
+    @apply transition-all duration-200;
+  }
+
+  textarea.input {
+    @apply resize-y;
+  }
+
+  /* Badge Styles */
+  .badge {
+    @apply inline-block rounded px-2 py-0.5 text-xs font-medium mr-1 mb-1;
+    @apply bg-ink/10 text-ink border border-ink/20;
+  }
+
+  /* Difficulty Badges */
+  .difficulty-trivial {
+    @apply bg-forest-light/20 text-forest border-forest/30;
+  }
+
+  .difficulty-easy {
+    @apply bg-forest/20 text-forest-dark border-forest/30;
+  }
+
+  .difficulty-medium {
+    @apply bg-brass/20 text-brass-dark border-brass/30;
+  }
+
+  .difficulty-hard {
+    @apply bg-gold/20 text-gold-dark border-gold/30;
+  }
+
+  .difficulty-deadly {
+    @apply bg-crimson/20 text-crimson border-crimson/30;
+  }
+
+  /* Sidebar Styles - Leather Panel */
+  .sidebar {
+    @apply bg-leather shadow-xl;
+    background-image: theme('backgroundImage.wood-texture');
+  }
+
+  /* Modal Styles - Scroll/Parchment */
+  .modal-overlay {
+    @apply fixed inset-0 bg-oak-dark/80 backdrop-blur-sm;
+    @apply flex items-center justify-center z-50 p-4;
+    @apply animate-fadeIn;
+  }
+
+  .modal-scroll {
+    @apply relative bg-parchment rounded-lg shadow-modal;
+    @apply max-w-4xl w-full max-h-[90vh] overflow-hidden;
+    background-image: theme('backgroundImage.parchment-texture');
+  }
+
+  .modal-content {
+    @apply overflow-y-auto max-h-[90vh] p-6;
+  }
+
+  /* Wooden Plank Toolbar */
+  .toolbar {
+    @apply bg-leather-light shadow-md;
+    @apply border-b-2 border-oak;
+    background-image: theme('backgroundImage.wood-texture');
+  }
+
+  /* Status Pills */
+  .status-accepted {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+    @apply bg-gold/30 text-gold-dark border border-gold;
+  }
+
+  .status-completed {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+    @apply bg-forest/30 text-forest border border-forest-light;
+  }
+
+  .status-available {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium;
+    @apply bg-parchment-aged text-ink border border-ink/20;
+  }
+
+  /* Lock indicator */
+  .lock-indicator {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-md;
+    @apply bg-crimson/20 text-crimson border border-crimson/30 text-sm font-medium;
+  }
+}
+
+/* Animations */
+@layer utilities {
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-slideUp {
+    animation: slideUp 0.3s ease-out;
+  }
+}
+
+/* Masonry Grid Support */
+@supports (grid-template-rows: masonry) {
+  .masonry-grid {
+    display: grid;
+    grid-template-rows: masonry;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+}
+
+/* Focus visible for accessibility */
+*:focus-visible {
+  @apply outline-2 outline-offset-2 outline-brass;
+}
 

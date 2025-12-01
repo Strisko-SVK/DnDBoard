@@ -1,3 +1,7 @@
+// Load environment variables first
+import { config } from 'dotenv';
+config();
+
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
@@ -8,6 +12,8 @@ import jwt from 'jsonwebtoken';
 import { v4 as uuid } from 'uuid';
 
 // Ensure DATABASE_URL fallback (deployment safety) before PrismaClient init
+console.log('[startup] Current working directory:', process.cwd());
+console.log('[startup] DATABASE_URL from env:', process.env.DATABASE_URL || '(not set)');
 if(!process.env.DATABASE_URL){
   process.env.DATABASE_URL = 'file:./prisma/dev.db';
   // eslint-disable-next-line no-console
@@ -187,7 +193,7 @@ app.get('/boards/:id/quests', auth, async (req:AuthedReq,res)=>{
   res.json(quests.map((q:any)=>serializeQuest(q)));
 });
 
-// Decline quest (transient)
+// Decline quest (transient) - tracks user preference but quest remains on board
 app.post('/quests/:id/decline', auth, async (req:AuthedReq,res)=>{
   const { id } = req.params; const quest = await prisma.quest.findUnique({ where:{ id } });
   if(!quest) return res.status(404).json({ error:'Not found'});
