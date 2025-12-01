@@ -3,14 +3,13 @@ export const dynamic = 'force-dynamic';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { BoardsAPI, QuestsAPI, BoardOrderAPI, CommentsAPI } from '../../../lib/api';
+import { BoardsAPI, QuestsAPI, BoardOrderAPI } from '../../../lib/api';
 import { useAuthStore } from '../../../store/auth';
 import { Quest, Board } from '@dndboard/shared';
 import { QuestCard } from '../../../components/QuestCard';
 import { getSocket, SocketEvents } from '../../../lib/socket';
 
-function QuestModal({ quest, onClose, onAccept, onDecline, disabled, comments, onAddComment }: { quest: Quest; onClose: ()=>void; onAccept: ()=>void; onDecline: ()=>void; disabled?: boolean; comments: any[]; onAddComment:(body:string)=>void;}) {
-  const [newComment,setNewComment]=useState('');
+function QuestModal({ quest, onClose, onAccept, onDecline, disabled }: { quest: Quest; onClose: ()=>void; onAccept: ()=>void; onDecline: ()=>void; disabled?: boolean;}) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="card max-w-xl w-full max-h-[90vh] overflow-y-auto relative" onClick={e=>e.stopPropagation()}>
@@ -24,20 +23,9 @@ function QuestModal({ quest, onClose, onAccept, onDecline, disabled, comments, o
         <div className="prose prose-sm max-w-none mb-6">
           {quest.bodyMarkdown || '*No body*'}
         </div>
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2">
           <button className="btn" disabled={disabled} onClick={onAccept}>Accept</button>
           <button className="btn-outline" disabled={disabled} onClick={onDecline}>Decline</button>
-        </div>
-        <div>
-          <h3 className="font-semibold mb-2">Comments ({comments.length})</h3>
-          <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
-            {comments.map(c=> <div key={c.id} className="text-xs p-2 rounded bg-ink/5"><span className="font-semibold mr-2">{c.authorId.slice(0,6)}</span>{c.bodyMarkdown}</div>)}
-            {comments.length===0 && <div className="text-xs opacity-60">No comments yet.</div>}
-          </div>
-          <form onSubmit={e=>{e.preventDefault(); if(!newComment.trim()) return; onAddComment(newComment.trim()); setNewComment('');}} className="flex gap-2">
-            <input className="input flex-1" placeholder="Add a comment" value={newComment} onChange={e=>setNewComment(e.target.value)} />
-            <button className="btn" disabled={!newComment.trim()}>Post</button>
-          </form>
         </div>
       </div>
     </div>
@@ -55,7 +43,6 @@ export default function BoardDetailPage() {
   const [newQuestOpen, setNewQuestOpen] = useState(false);
   const [form, setForm] = useState({ title: '', summary: '', bodyMarkdown: '', difficulty: 'Medium', tags: '' });
   const [presence,setPresence]=useState<string[]>([]);
-  const [questComments,setQuestComments]=useState<Record<string, any[]>>({});
 
   const { data: board, error: boardError } = useQuery<Board | undefined>({ queryKey: ['board', boardId], queryFn: () => BoardsAPI.get(boardId), enabled: !!boardId && !!token });
   const { data: quests = [], refetch: refetchQuests } = useQuery<Quest[]>({ queryKey: ['quests', boardId], queryFn: () => QuestsAPI.list(boardId), enabled: !!boardId && !!token });
@@ -71,7 +58,6 @@ export default function BoardDetailPage() {
     s.on(SocketEvents.QuestUpdate, questUpdate);
     s.on(SocketEvents.BoardUpdate, questUpdate);
     s.on(SocketEvents.PresenceUpdate,(p:any)=>{ if(p.boardId===boardId) setPresence(p.users||[]); });
-    s.on(SocketEvents.CommentNew,(p:any)=>{ const c=p.comment; if(!c) return; setQuestComments(prev=>({...prev,[c.questId]:[...(prev[c.questId]||[]),c]})); });
     return () => {
       s.emit('unsubscribe:board', boardId);
       s.off(SocketEvents.QuestUpdate, questUpdate);
@@ -81,16 +67,8 @@ export default function BoardDetailPage() {
 
   const createQuest = useMutation({ mutationFn: (data: any) => QuestsAPI.create(boardId, data), onSuccess: () => { setForm({ title:'', summary:'', bodyMarkdown:'', difficulty:'Medium', tags:''}); setNewQuestOpen(false); refetchQuests(); } });
   const acceptQuest = useMutation({ mutationFn: (id: string) => QuestsAPI.accept(id, { assignedToType: 'Player' }), onSuccess: () => { refetchQuests(); setSelected(null); } });
-  const declineQuest = useMutation({ mutationFn: (id: string) => QuestsAPI.decline(id), onSuccess: () => { setSelected(null); refetchQuests(); } });
+  const declineQuest = useMutation({ mutationFn: (id: string) => QuestsAPI.decline(id), onSuccess: () => { setSelected(null); } });
   const reorderMutation = useMutation({ mutationFn: (newOrder: string[]) => BoardOrderAPI.reorder(boardId, newOrder), onSuccess: () => refetchQuests() });
-
-  useEffect(()=>{ // load comments for selected quest when opened
-    if(selected){
-      if(!questComments[selected.id]){
-        CommentsAPI.list(selected.id).then(list=> setQuestComments(prev=>({...prev,[selected.id]:list})) ).catch(()=>{});
-      }
-    }
-  },[selected,questComments]);
 
   // Redirect moved into effect to avoid SSR router usage
   useEffect(()=>{ if(!token){ router.replace('/login'); } }, [token, router]);
@@ -112,62 +90,176 @@ export default function BoardDetailPage() {
   const filtered = quests.filter(q => !search || q.title.toLowerCase().includes(search.toLowerCase()) || q.summary.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center gap-3 flex-wrap">
-        <button onClick={()=>router.push('/')} className="btn-outline text-xs">← Boards</button>
-        <h1 className="text-2xl font-display font-bold flex-1">{board?.title || 'Loading...'}</h1>
-        {isDM && <button className="btn-outline" onClick={()=>setNewQuestOpen(v=>!v)}>{newQuestOpen ? 'Close Quest Form' : 'New Quest'}</button>}
-      </div>
-      <div className="flex gap-2 items-center flex-wrap">
-        <input className="input" placeholder="Search quests..." value={search} onChange={e=>setSearch(e.target.value)} />
-        {board?.isLocked && <span className="text-sm px-2 py-1 rounded bg-red-200">Locked</span>}
-        <button className="btn-outline ml-auto" onClick={()=>router.push('/inventory')}>Inventory</button>
-        <span className="text-xs opacity-70">Online: {presence.length}</span>
-      </div>
-      {newQuestOpen && isDM && (
-        <form onSubmit={e=>{e.preventDefault(); createQuest.mutate({ title: form.title, summary: form.summary, bodyMarkdown: form.bodyMarkdown, difficulty: form.difficulty, tags: form.tags.split(',').map(t=>t.trim()).filter(Boolean) });}} className="card space-y-2">
-          <div className="grid md:grid-cols-2 gap-2">
-            <div>
-              <label className="text-xs font-medium">Title</label>
-              <input className="input" value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} required />
-            </div>
-            <div>
-              <label className="text-xs font-medium">Difficulty</label>
-              <select className="input" value={form.difficulty} onChange={e=>setForm(f=>({...f,difficulty:e.target.value}))}>
-                {['Trivial','Easy','Medium','Hard','Deadly'].map(d=> <option key={d}>{d}</option>)}
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="text-xs font-medium">Summary</label>
-            <textarea className="input" value={form.summary} onChange={e=>setForm(f=>({...f,summary:e.target.value}))} required rows={3} />
-          </div>
-          <div>
-            <label className="text-xs font-medium">Body (Markdown)</label>
-            <textarea className="input font-mono text-xs" value={form.bodyMarkdown} onChange={e=>setForm(f=>({...f,bodyMarkdown:e.target.value}))} placeholder="Detailed quest description..." rows={6} />
-          </div>
-          <div>
-            <label className="text-xs font-medium">Tags (comma separated)</label>
-            <input className="input" value={form.tags} onChange={e=>setForm(f=>({...f,tags:e.target.value}))} />
-          </div>
-          <button className="btn" disabled={createQuest.isPending}>{createQuest.isPending? 'Creating...' : 'Create Quest'}</button>
-        </form>
-      )}
+    <div className="min-h-screen flex flex-col">
+      {/* Wooden Plank Toolbar */}
+      <div className="toolbar px-4 py-3 flex items-center gap-3 flex-wrap">
+        <button onClick={() => router.push('/')} className="btn-outline text-xs px-3 py-1.5">
+          ← Boards
+        </button>
+        <h1 className="font-display text-2xl font-bold flex-1 text-parchment">
+          {board?.title || 'Loading...'}
+        </h1>
 
-      <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {filtered.map(q => (
-          <QuestCard key={q.id} quest={q} onOpen={setSelected} isDM={isDM} onMoveUp={()=>moveQuest(q.id,-1)} onMoveDown={()=>moveQuest(q.id,1)} />
-        ))}
+        {/* Lock Indicator */}
+        {board?.isLocked && (
+          <div className="lock-indicator">
+            <span>🔒</span>
+            <span>Board Locked</span>
+          </div>
+        )}
+
+        {/* Online Presence */}
+        <div className="flex items-center gap-2 text-parchment-aged text-sm">
+          <span className="w-2 h-2 rounded-full bg-forest-light animate-pulse"></span>
+          <span>{presence.length} online</span>
+        </div>
+
+        {isDM && (
+          <button
+            className={newQuestOpen ? "btn-decline text-xs" : "btn-primary text-xs"}
+            onClick={() => setNewQuestOpen(v => !v)}
+          >
+            {newQuestOpen ? '✕ Close Form' : '+ New Quest'}
+          </button>
+        )}
       </div>
 
+      {/* Search & Filter Bar */}
+      <div className="bg-parchment-aged border-b border-ink/10 px-4 py-3 flex gap-3 items-center flex-wrap">
+        <div className="flex-1 min-w-[200px]">
+          <input
+            className="input"
+            placeholder="🔍 Search quests..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <button className="btn-outline text-xs px-3 py-1.5" onClick={() => router.push('/inventory')}>
+          📦 My Inventory
+        </button>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 bg-oak p-4 overflow-y-auto">
+        {/* Quest Creation Form */}
+        {newQuestOpen && isDM && (
+          <div className="mb-6 card animate-slideUp">
+            <h2 className="font-display text-xl font-bold mb-4 text-ink">Create New Quest</h2>
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                createQuest.mutate({
+                  title: form.title,
+                  summary: form.summary,
+                  bodyMarkdown: form.bodyMarkdown,
+                  difficulty: form.difficulty,
+                  tags: form.tags.split(',').map(t => t.trim()).filter(Boolean)
+                });
+              }}
+              className="space-y-3"
+            >
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-ink mb-1">Quest Title *</label>
+                  <input
+                    className="input"
+                    value={form.title}
+                    onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                    required
+                    placeholder="e.g., Wanted: The Cellar Rats"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-ink mb-1">Difficulty *</label>
+                  <select
+                    className="input"
+                    value={form.difficulty}
+                    onChange={e => setForm(f => ({ ...f, difficulty: e.target.value }))}
+                  >
+                    {['Trivial', 'Easy', 'Medium', 'Hard', 'Deadly'].map(d => (
+                      <option key={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-ink mb-1">Summary *</label>
+                <textarea
+                  className="input"
+                  value={form.summary}
+                  onChange={e => setForm(f => ({ ...f, summary: e.target.value }))}
+                  required
+                  rows={3}
+                  placeholder="A brief, enticing hook for the quest..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-ink mb-1">Detailed Description (Markdown)</label>
+                <textarea
+                  className="input font-mono text-xs"
+                  value={form.bodyMarkdown}
+                  onChange={e => setForm(f => ({ ...f, bodyMarkdown: e.target.value }))}
+                  placeholder="**Objectives:**&#10;- Clear the cellar&#10;- Report back to the innkeeper"
+                  rows={6}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-ink mb-1">Tags (comma separated)</label>
+                <input
+                  className="input"
+                  value={form.tags}
+                  onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+                  placeholder="Combat, Mystery, Underdark"
+                />
+              </div>
+              <button className="btn-primary" disabled={createQuest.isPending}>
+                {createQuest.isPending ? 'Creating...' : '✨ Create Quest'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Masonry Grid for Quest Cards */}
+        <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 2xl:columns-5 gap-4">
+          {filtered.map(q => (
+            <QuestCard
+              key={q.id}
+              quest={q}
+              onOpen={setSelected}
+              isDM={isDM}
+              onMoveUp={() => moveQuest(q.id, -1)}
+              onMoveDown={() => moveQuest(q.id, 1)}
+            />
+          ))}
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="card text-center py-12">
+            <div className="text-4xl mb-4">📜</div>
+            <p className="text-ink/60">
+              {search ? 'No quests match your search.' : 'No quests on this board yet.'}
+            </p>
+            {isDM && !search && (
+              <button
+                className="btn-primary mt-4"
+                onClick={() => setNewQuestOpen(true)}
+              >
+                Create Your First Quest
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Quest Modal */}
       {selected && (
-        <QuestModal quest={selected} onClose={()=>setSelected(null)} disabled={acceptQuest.isPending || declineQuest.isPending}
-          onAccept={()=>acceptQuest.mutate(selected.id)}
-          onDecline={()=>declineQuest.mutate(selected.id)}
-          comments={questComments[selected.id]||[]}
-          onAddComment={(body)=>{
-            CommentsAPI.create(selected.id,body).catch(()=>{});
-          }} />
+        <QuestModal
+          quest={selected}
+          onClose={() => setSelected(null)}
+          disabled={acceptQuest.isPending || declineQuest.isPending}
+          onAccept={() => acceptQuest.mutate(selected.id)}
+          onDecline={() => declineQuest.mutate(selected.id)}
+        />
       )}
     </div>
   );

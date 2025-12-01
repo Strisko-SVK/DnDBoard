@@ -1,25 +1,46 @@
-# DnD Quest Board (MVP Monorepo)
+# DnD Quest Board (MVP Monorepo) 🏰
 
 Spec‑driven implementation scaffold for the DnD Quest Board web app (see `./specs/specV1.md`).
+
+**Now featuring a fully-themed Fantasy Tavern UI!** 🎨
 
 ## Packages
 
 - `shared` — TypeScript domain types shared by backend & frontend
 - `backend` — Express + Socket.IO in‑memory API server (MVP)
-- `frontend` — Next.js 14 App Router UI (React Query + Zustand + Tailwind)
+- `frontend` — Next.js 14 App Router UI (React Query + Zustand + Tailwind) **with Fantasy Tavern Theme**
 
 ## Current MVP Scope Implemented
 
-- Auth: register/login (JWT access token only, in-memory users)
-- Boards: create/list/detail/update (lock), invite players, basic membership, quest ordering
-- Quests: create/list/detail/edit/archive (in-memory), reorder, accept, decline (local per-user preference store), completion (assignment + quest auto complete)
-- Inventory: accepted quests (QuestAssignment) listing + completion
-- Real‑time: board + quest updates via Socket.IO broadcast (`board:update`, `quest:update`)
-- Admin: seeded admin account, user listing and role promotion
+- **Auth**: register/login (JWT access token only, in-memory users)
+- **Boards**: create/list/detail/update (lock), invite players, basic membership, quest ordering
+- **Quests**: create/list/detail/edit/archive (in-memory), reorder, accept, decline (local per-user preference store), completion (assignment + quest auto complete)
+- **Inventory**: accepted quests (QuestAssignment) listing + completion
+- **Real‑time**: board + quest updates via Socket.IO broadcast (`board:update`, `quest:update`)
+- **Admin**: seeded admin account, user listing and role promotion
+- **🎨 Fantasy Tavern Theme**: Fully immersive D&D-styled UI with parchment cards, wooden toolbars, masonry layout, and medieval aesthetics
+
+## ✨ Theme Features
+
+The application now features a complete **Fantasy Tavern Theme** inspired by medieval quest boards:
+
+- 🎨 **Rich Color Palette**: Oak, leather, parchment, ink, with crimson/gold/brass accents
+- 🖋️ **Fantasy Typography**: Cinzel Decorative for titles, Inter for body text
+- 📜 **Parchment Quest Cards**: Masonry grid layout with torn-edge effects
+- 🏰 **Wooden Toolbars**: Dark leather navigation bars
+- ⚔️ **Themed Components**: Difficulty badges, status pills, wax seal-style buttons
+- 📱 **Fully Responsive**: Mobile-first with sticky footers and optimized touch targets
+- ♿ **WCAG AA Accessible**: High contrast, keyboard navigation, screen reader friendly
+
+**See Documentation:**
+- 📖 [IMPLEMENTATION_COMPLETE.md](./IMPLEMENTATION_COMPLETE.md) - Full feature overview
+- 🎨 [THEME_GUIDE.md](./THEME_GUIDE.md) - Developer quick reference
+- 📋 [TESTING_CHECKLIST.md](./TESTING_CHECKLIST.md) - QA testing guide
+- 📐 [specs/design_proposalV1.md](./specs/design_proposalV1.md) - Original design spec
 
 ## Not Yet Implemented (Deferred per Spec)
 
-- Persistence (PostgreSQL), Redis presence, comments, abandon state, parties management UI, file/image uploads, search performance optimizations, RBAC hardening (beyond simple role checks), refresh tokens, invite tokens, theming polish, OpenAPI docs, automated test suite.
+- Persistence (PostgreSQL), Redis presence, comments, abandon state, parties management UI, file/image uploads, search performance optimizations, RBAC hardening (beyond simple role checks), refresh tokens, invite tokens, OpenAPI docs, automated test suite.
 
 ## Prerequisites
 
@@ -36,10 +57,47 @@ npm -w shared run build
 # Run all packages concurrently (shared watch, backend, frontend)
 npm run dev
 ```
+
+**With Prisma Backend (Persistent Database):**
+```bash
+# Run with Prisma SQLite backend instead of in-memory
+npm run dev:prisma
+```
+
+**Backend Only:**
+```bash
+# In-memory backend only
+npm run backend:dev
+
+# Prisma backend only
+npm run backend:dev:prisma
+```
+
 Frontend: http://localhost:3000  
-Backend: http://localhost:4000
+Backend: http://localhost:4000 (in-memory) or http://localhost:4000 (Prisma)
 
 Set `NEXT_PUBLIC_BACKEND_URL` in `frontend/.env.local` if you change backend port.
+
+### Database Configuration (Prisma)
+
+The Prisma backend uses SQLite for development. Configuration is in `backend/.env`:
+
+```env
+DATABASE_URL=file:/Users/strise/AquaProjects/Work/DnDBoard/backend/prisma/dev.db
+PERSISTENCE=prisma
+```
+
+**Note:** The DATABASE_URL must use an absolute path for SQLite. Update this path if you clone the repo to a different location.
+
+**Database Migrations:**
+```bash
+# Run migrations
+cd backend
+npm run prisma:migrate
+
+# Generate Prisma Client (after schema changes)
+npm run prisma:generate
+```
 
 ## Default Admin Account
 
@@ -121,11 +179,13 @@ frontend/store/auth.ts   # Zustand auth store
 
 ## Development Notes
 
-- In-memory data resets on server restart.
+- **In-memory backend:** Data resets on server restart.
+- **Prisma backend:** Data persists in SQLite database (`backend/prisma/dev.db`).
 - JWT secret is hard-coded for MVP (`dev-secret-change`). DO NOT use in production.
 - Reordering updates `board.questOrder` for deterministic quest listing.
 - Decline endpoint stores a local (server memory) marker only; filtering hides declined quests unless `includeDeclined=true`.
 - Admin seeding logs plain credentials to console (development convenience only).
+- **Important:** The `DATABASE_URL` in `backend/.env` must use an absolute path for SQLite. See [DATABASE_FIX.md](./DATABASE_FIX.md) for details.
 
 ## Automated Smoke Script
 

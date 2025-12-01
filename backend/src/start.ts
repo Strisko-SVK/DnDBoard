@@ -2,6 +2,10 @@
 // Usage: PERSISTENCE=prisma ts-node-dev src/start.ts  (Prisma-backed)
 //        (default) ts-node-dev src/start.ts          (In-memory)
 
+// Load environment variables from .env file
+import { config } from 'dotenv';
+config();
+
 const mode = process.env.PERSISTENCE?.toLowerCase();
 if(mode === 'prisma') {
   console.log('[start] Launching Prisma persistence server (server-prisma.ts)');

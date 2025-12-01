@@ -416,6 +416,7 @@ app.post('/quests/:id/accept', authMiddleware, (req: AuthedRequest, res: express
   res.status(201).json({ assignment, quest: q });
 });
 
+// Decline quest - tracks user preference but quest remains on board
 app.post('/quests/:id/decline', authMiddleware, (req: AuthedRequest, res: express.Response) => {
   const q = quests[(req.params as any).id];
   if (!q) return res.status(404).json({ error: 'Not found' });

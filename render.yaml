@@ -1,35 +1,51 @@
 services:
+  # Backend API Service
+  # IMPORTANT: SQLite is NOT recommended for production on Render (ephemeral filesystem)
+  # For production, either:
+  # 1. Add a PostgreSQL database and update DATABASE_URL to point to it
+  # 2. Use the in-memory backend by removing PERSISTENCE=prisma
+  # 3. Use a persistent disk (Render paid plan) for SQLite
   - type: web
     name: dndboard-backend
-    env: node
+    runtime: node
     plan: free
     buildCommand: npm install --include=dev && npm run build:render:backend
     startCommand: cd backend && npm run prisma:migrate:deploy:safe && npm run start:prod
     envVars:
+      # WARNING: SQLite file will be lost on every deploy/restart with ephemeral storage
+      # For persistence, use PostgreSQL: postgresql://user:pass@host:5432/dbname
+      # Example: Add a Render PostgreSQL database and use its internal connection string
       - key: DATABASE_URL
-        value: file:./prisma/dev.db
+        # OPTION 1 (Development/Testing): SQLite - data will be lost on redeploy
+        value: file:/opt/render/project/src/backend/prisma/production.db
+        # OPTION 2 (Recommended): PostgreSQL - uncomment and add Render Postgres DB
+        # sync: false  # Set in Render dashboard to your PostgreSQL connection string
       - key: JWT_SECRET
-        sync: false
+        sync: false  # REQUIRED: Set this in Render dashboard to a secure random value
       - key: ADMIN_EMAIL
         value: admin@example.com
       - key: ADMIN_PASSWORD
-        value: changeMe123!
+        sync: false  # REQUIRED: Set this in Render dashboard, do NOT use default!
       - key: PERSISTENCE
         value: prisma
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 4000
     healthCheckPath: /health
     autoDeploy: true
 
-  # Add a second service for the Next.js frontend.
-  # This will be deployed as a separate web service on Render.
+  # Frontend (Next.js) Service
   - type: web
-    name: dndboard
-    env: node
+    name: dndboard-frontend
+    runtime: node
     plan: free
     buildCommand: npm install --include=dev && npm run build:render:frontend
     startCommand: npm start -w frontend
     envVars:
       - key: NEXT_PUBLIC_BACKEND_URL
+        # Update this to match your actual backend service URL
         value: https://dndboard-backend.onrender.com
+      - key: NODE_ENV
+        value: production
     autoDeploy: true
